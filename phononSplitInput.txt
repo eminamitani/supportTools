@@ -1,0 +1,12 @@
+--qmesh
+6
+6
+6
+--scfFile
+GaN.scf.in
+--njobs
+4
+--nqs
+28
+--polar
+true
