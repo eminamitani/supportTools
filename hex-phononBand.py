@@ -16,6 +16,9 @@ if __name__ == '__main__':
     parser.add_argument('--prefix', metavar='prefix for QE calculation', type=str,action='store')
     parser.add_argument('--scfin', metavar='scf input including latice parameter info', action='store')
     parser.add_argument('--mesh', metavar='mesh point in one path', type=int, default=30, action="store")
+    parser.add_argument('--dim', metavar='dimension of the system', type=int, default=3, action="store")
+    parser.add_argument('--nmodes', metavar='number of phonon modes', type=int, default=12, action='store')
+    parser.add_argument('--Emax', metavar='maximum energy of phonon in plot', type=float, action='store')
     
     args=parser.parse_args() 
     ROOT="/home/emi/espresso/install-test/qe-6.2/bin"
@@ -79,16 +82,25 @@ if __name__ == '__main__':
     
     #make phonon band input
     
-    #hex phononBand path Gamma--> M --> K --> Gamma --> A --> L --> H-->A
+    
     hexPoint=[]
-    hexPoint.append([0.0,0.0,0.0]) #Gamma
-    hexPoint.append([0.0,0.5,0.0]) #M
-    hexPoint.append([0.33333333,0.33333333,0.0]) #K
-    hexPoint.append([0.0,0.0,0.0]) #Gamma
-    hexPoint.append([0.0,0.0,0.5]) #A
-    hexPoint.append([0.0,0.5,0.5]) #L
-    hexPoint.append([0.33333333,0.33333333,0.5]) #H
-    hexPoint.append([0.0,0.0,0.5]) #A
+    if(args.dim==3):
+        #hex phononBand path Gamma--> M --> K --> Gamma --> A --> L --> H-->A in 3D
+        hexPoint.append([0.0,0.0,0.0]) #Gamma
+        hexPoint.append([0.0,0.5,0.0]) #M
+        hexPoint.append([0.33333333,0.33333333,0.0]) #K
+        hexPoint.append([0.0,0.0,0.0]) #Gamma
+        hexPoint.append([0.0,0.0,0.5]) #A
+        hexPoint.append([0.0,0.5,0.5]) #L
+        hexPoint.append([0.33333333,0.33333333,0.5]) #H
+        hexPoint.append([0.0,0.0,0.5]) #A
+    elif(args.dim==2):
+        #hex phononBand path Gamma--> M --> K --> Gamma
+        hexPoint.append([0.0,0.0,0.0]) #Gamma
+        hexPoint.append([0.0,0.5,0.0]) #M
+        hexPoint.append([0.33333333,0.33333333,0.0]) #K
+        hexPoint.append([0.0,0.0,0.0]) #Gamma
+        
     
     #read lattice information from scf input
     scfin=open(args.scfin, "r")
@@ -137,8 +149,8 @@ if __name__ == '__main__':
     matdyn=open("matdyn.in.freq", "w")
     matdyn.write("&input \n")
     matdyn.write("asr=\'simple\' \n")
-    matdyn.write("flfrc=\'GaN.fc\' \n")
-    matdyn.write("flfrq=\'GaN.freq\' \n")
+    matdyn.write("flfrc=\'"+args.prefix+".fc\' \n")
+    matdyn.write("flfrq=\'"+args.prefix+".freq\' \n")
     matdyn.write("dos=.false. \n")
     matdyn.write("/ \n")
     matdyn.write(str(len(pathpoints))+"\n")
@@ -152,7 +164,7 @@ if __name__ == '__main__':
     #for gnuplot version of band plotting
     
     #list of index for high symetric point
-    datafile=open("GaN.freq.gp","r")
+    datafile=open(args.prefix+".freq.gp","r")
     data=datafile.readlines()
     datafile.close()
     
@@ -172,12 +184,12 @@ if __name__ == '__main__':
         sympoints.append(kcoord[i-1])
         
     ymin=0.0
-    ymax=100.0
+    ymax=args.Emax
     maxk=kcoord[len(kcoord)-1]
     
     gp=open("gnuplot.plt", "w")
     gp.write("set term postscript eps enhanced color \"Arial\" 25 \n")
-    gp.write("set output \"compare.eps\" \n")
+    gp.write("set output \""+str(args.prefix)+".eps\" \n")
     gp.write("set style data dots \n")
     gp.write("set key below \n")
     gp.write("ymin= "+ str(ymin) +"\n")
@@ -187,20 +199,26 @@ if __name__ == '__main__':
     
     for i in sympoints:
         gp.write("set arrow from "+ str(i) + " , " + "ymin" + " to " + str(i) +" , ymax  nohead \n")
-    
-    gp.write("set xtics (\" G \" "+str(sympoints[0]) + ",\" M \" "+ str(sympoints[1]) + \
+        
+    if(args.dim==3):
+        gp.write("set xtics (\" G \" "+str(sympoints[0]) + ",\" M \" "+ str(sympoints[1]) + \
              ",\" K \" "+  str(sympoints[2]) + ",\" G \" " +  str(sympoints[3]) + \
             ",\" A \" "+  str(sympoints[4]) + ",\" L \" "+  str(sympoints[5]) + \
             ",\" H \" "+  str(sympoints[6]) +",\" A \" " + str(sympoints[7])+ ") \n")
+    elif(args.dim==2):
+        gp.write("set xtics (\" G \" "+str(sympoints[0]) + ",\" M \" "+ str(sympoints[1]) + \
+             ",\" K \" "+  str(sympoints[2]) + ",\" G \" " +  str(sympoints[3]) + ") \n")
     
-    gp.write("plot \"GaN.freq.gp\" using 1:($2)*0.12398  noti  w l lw 2 lt 1, \\\n")
+    gp.write("plot \""+args.prefix+".freq.gp\" using 1:($2)*0.12398  noti  w l lw 2 lt 1, \\\n")
     
-    for i in range(3,13):
-        gp.write("\"GaN.freq.gp\" using 1:($"+str(i)+")*0.12398  noti  w l lw 2 lt 1, \\\n")
+    for i in range(3,args.nmodes+1):
+        gp.write("\""+args.prefix+".freq.gp\" using 1:($"+str(i)+")*0.12398  noti  w l lw 2 lt 1, \\\n")
     
-    gp.write("\"GaN.freq.gp\" using 1:($13)*0.12398  noti  w l lw 2 lt 1 \n")
+    gp.write("\""+args.prefix+".freq.gp\" using 1:($"+str(args.nmodes+1)+")*0.12398  noti  w l lw 2 lt 1 \n")
     
     gp.close()
+    
+    os.system("gnuplot<gnuplot.plt")
         
     
     

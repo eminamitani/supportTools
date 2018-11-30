@@ -1,0 +1,14 @@
+--workingDir
+.
+--prefix
+graphene
+--scfin
+gr.scf.in
+--mesh
+30
+--dim
+2
+--nmodes
+6
+--Emax
+400
