@@ -47,7 +47,7 @@ if __name__ == '__main__':
         nscflines.append("K_POINTS {tpiba_b} \n 8 \n gG 30 \n M  30 \n K  30\n" \
                     + " gG 30 \n A  30 \n L  30 \n H  30 \n A  1 \n")
     elif(args.dim==2):
-        nscflines.append("K_POINTS {tpiba_b} \n 8 \n gG 30 \n M  30 \n K  30\n" \
+        nscflines.append("K_POINTS {tpiba_b} \n 4 \n gG 30 \n M  30 \n K  30\n" \
                     + " gG 1 \n")
 
     fnscf=open(args.prefix+".nscf.in","w")
